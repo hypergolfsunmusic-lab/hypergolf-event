@@ -153,13 +153,13 @@ function initReservation(gasUrl) {
 
     try {
       const result = await gasGet(gasUrl, {
-        action:  'reserve',
-        date:    selectedSlot.date,
-        time:    selectedSlot.time,
-        name:    name,
-        phone:   phone,
-        concern: concern
-      });
+  action:  'reserve',
+  date:    selectedSlot.date,
+  time:    selectedSlot.time,
+  uname:   name,      // name → uname に変更
+  phone:   phone,
+  concern: concern
+});
 
       if (result.success) {
         hide('step-form');
