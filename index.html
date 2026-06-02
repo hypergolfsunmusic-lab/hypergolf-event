@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HYPER GOLF イベント予約</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <div class="logo">⛳ HYPER GOLF</div>
+      <h1>イベント予約</h1>
+      <p class="subtitle">ゴルフレッスン体験会 ― 30分枠・各2名様限定</p>
+    </header>
+
+    <!-- STEP 1: 枠選択 -->
+    <section id="step-slots" class="card">
+      <h2 class="step-title"><span class="step-badge">1</span>ご希望の時間を選択</h2>
+      <div id="slots-loading" class="loading-msg">空き状況を読み込み中…</div>
+      <div id="slots-error" class="error-msg hidden"></div>
+      <div id="event-date-label" class="date-label"></div>
+      <div id="slots-grid" class="slots-grid"></div>
+    </section>
+
+    <!-- STEP 2: 情報入力 -->
+    <section id="step-form" class="card hidden">
+      <h2 class="step-title"><span class="step-badge">2</span>お客様情報の入力</h2>
+      <div class="selected-slot-info" id="selected-slot-info"></div>
+
+      <div class="form-group">
+        <label for="name">お名前 <span class="required">*</span></label>
+        <input type="text" id="name" placeholder="山田 太郎" maxlength="50" />
+      </div>
+      <div class="form-group">
+        <label for="phone">電話番号 <span class="required">*</span></label>
+        <input type="tel" id="phone" placeholder="090-1234-5678" maxlength="20" />
+      </div>
+      <div class="form-group">
+        <label for="concern">ゴルフでのお悩み</label>
+        <textarea id="concern" rows="4" placeholder="例：スライスが直らない、飛距離が伸びない など"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btn-back">← 戻る</button>
+        <button class="btn btn-primary" id="btn-submit">予約を確定する</button>
+      </div>
+      <div id="form-error" class="error-msg hidden"></div>
+    </section>
+
+    <!-- STEP 3: 完了 -->
+    <section id="step-done" class="card hidden">
+      <div class="done-icon">✅</div>
+      <h2>予約が完了しました</h2>
+      <div id="done-summary" class="done-summary"></div>
+      <button class="btn btn-secondary" id="btn-restart">別の枠を予約する</button>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // GAS Web App URL を設定してください
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwSiV9W7th_BwqXIBwl2WAAPXYr7ziWxOMzRf6f-BlOVC0rv03_jqFNAk9KU0k-DQA7xQ/exec';
+    initReservation(GAS_URL);
+  </script>
+</body>
+</html>

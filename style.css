@@ -1,0 +1,275 @@
+/* ============================================================
+   HYPER GOLF 予約システム - スタイルシート
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #1a7c4f;
+  --green-light: #e8f5ee;
+  --green-dark: #145e3b;
+  --gold: #c9a227;
+  --text: #1a1a1a;
+  --text-muted: #666;
+  --border: #d4d4d4;
+  --bg: #f5f7f5;
+  --white: #fff;
+  --red: #d32f2f;
+  --red-light: #fdecea;
+  --blue: #1565c0;
+}
+
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ── ヘッダー ── */
+.site-header {
+  text-align: center;
+  padding: 32px 0 24px;
+}
+.logo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: .1em;
+  margin-bottom: 8px;
+}
+.site-header h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--green-dark);
+}
+.subtitle {
+  margin-top: 6px;
+  font-size: .85rem;
+  color: var(--text-muted);
+}
+
+/* ── カード ── */
+.card {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+/* ── ステップバッジ ── */
+.step-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── 日付ラベル ── */
+.date-label {
+  font-size: .95rem;
+  color: var(--green-dark);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* ── 枠グリッド ── */
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+.slot-btn {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 6px;
+  background: var(--white);
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+}
+.slot-btn:hover:not(.full):not(.selected) {
+  border-color: var(--green);
+  background: var(--green-light);
+}
+.slot-btn.selected {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+.slot-btn.full {
+  border-color: var(--border);
+  background: #f0f0f0;
+  color: #aaa;
+  cursor: not-allowed;
+}
+.slot-time { font-size: 1rem; font-weight: 700; }
+.slot-avail { font-size: .72rem; margin-top: 3px; }
+.slot-btn.selected .slot-avail { color: rgba(255,255,255,.8); }
+.slot-btn.full .slot-avail { color: #bbb; }
+
+/* ── フォーム ── */
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: .85rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+}
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: .95rem;
+  font-family: inherit;
+  transition: border-color .15s;
+  outline: none;
+}
+.form-group input:focus,
+.form-group textarea:focus { border-color: var(--green); }
+.required { color: var(--red); margin-left: 2px; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 520px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+
+/* ── ボタン ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover { opacity: .88; }
+.btn-secondary { background: #e8e8e8; color: var(--text); }
+.btn-secondary:hover { opacity: .8; }
+.btn-danger { background: var(--red); color: #fff; font-size: .8rem; padding: 6px 12px; border-radius: 6px; }
+.btn-sm { padding: 7px 14px; font-size: .82rem; }
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+/* ── 選択中枠情報 ── */
+.selected-slot-info {
+  background: var(--green-light);
+  border-left: 4px solid var(--green);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  font-size: .9rem;
+  color: var(--green-dark);
+}
+
+/* ── 完了画面 ── */
+.done-icon { font-size: 3rem; text-align: center; margin-bottom: 10px; }
+#step-done h2 { text-align: center; font-size: 1.3rem; margin-bottom: 16px; }
+.done-summary {
+  background: var(--green-light);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  font-size: .9rem;
+  line-height: 1.7;
+}
+
+/* ── メッセージ ── */
+.error-msg {
+  background: var(--red-light);
+  color: var(--red);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: .85rem;
+  margin-top: 10px;
+}
+.success-msg {
+  background: var(--green-light);
+  color: var(--green-dark);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: .85rem;
+  margin-top: 10px;
+}
+.loading-msg { color: var(--text-muted); font-size: .9rem; padding: 12px 0; }
+.empty-msg { color: var(--text-muted); text-align: center; padding: 24px 0; }
+
+/* ── 管理テーブル ── */
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.list-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .85rem;
+}
+thead th {
+  background: var(--green);
+  color: #fff;
+  padding: 10px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:hover { background: var(--green-light); }
+tbody td { padding: 9px 8px; vertical-align: top; }
+tbody tr.cancelled td { color: #aaa; text-decoration: line-through; }
+.badge-confirmed {
+  background: #e8f5ee; color: var(--green-dark);
+  border-radius: 4px; padding: 2px 7px; font-size: .75rem; font-weight: 700;
+}
+.badge-cancelled {
+  background: #f0f0f0; color: #999;
+  border-radius: 4px; padding: 2px 7px; font-size: .75rem; font-weight: 700;
+}
+
+.hidden { display: none !important; }
