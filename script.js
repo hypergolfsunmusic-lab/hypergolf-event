@@ -4,11 +4,35 @@
 
 // ── ユーティリティ ──────────────────────────────────────────
 
-async function gasGet(gasUrl, params) {
-  const url = new URL(gasUrl);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
-  return res.json();
+function gasGet(gasUrl, params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'cb_' + Math.random().toString(36).slice(2);
+    const url = new URL(gasUrl);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    url.searchParams.set('callback', callbackName);
+
+    const script = document.createElement('script');
+    script.src = url.toString();
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('timeout'));
+    }, 10000);
+
+    window[callbackName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    script.onerror = () => { cleanup(); reject(new Error('load error')); };
+    document.head.appendChild(script);
+  });
 }
 
 async function gasPost(gasUrl, body) {
