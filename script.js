@@ -2,7 +2,7 @@
 // HYPER GOLF 予約システム - クライアントJS
 // ============================================================
 
-// ── ユーティリティ ──────────────────────────────────────────
+// ── JSONP通信（GETのみ・CORS回避） ─────────────────────────
 
 function gasGet(gasUrl, params) {
   return new Promise((resolve, reject) => {
@@ -17,7 +17,7 @@ function gasGet(gasUrl, params) {
     const timer = setTimeout(() => {
       cleanup();
       reject(new Error('timeout'));
-    }, 10000);
+    }, 15000);
 
     window[callbackName] = (data) => {
       cleanup();
@@ -27,7 +27,7 @@ function gasGet(gasUrl, params) {
     function cleanup() {
       clearTimeout(timer);
       delete window[callbackName];
-      script.remove();
+      if (script.parentNode) script.remove();
     }
 
     script.onerror = () => { cleanup(); reject(new Error('load error')); };
@@ -35,18 +35,16 @@ function gasGet(gasUrl, params) {
   });
 }
 
-async function gasPost(gasUrl, body) {
-  const res = await fetch(gasUrl, {
-    method: 'POST',
-    body: JSON.stringify(body)
-  });
-  return res.json();
-}
+// ── ユーティリティ ──────────────────────────────────────────
 
 function show(id) { document.getElementById(id)?.classList.remove('hidden'); }
 function hide(id) { document.getElementById(id)?.classList.add('hidden'); }
-function setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
-function showError(id, msg) { const el = document.getElementById(id); if (!el) return; el.textContent = msg; el.classList.remove('hidden'); }
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
 function hideError(id) { document.getElementById(id)?.classList.add('hidden'); }
 
 // ── 予約フォーム ────────────────────────────────────────────
@@ -54,15 +52,18 @@ function hideError(id) { document.getElementById(id)?.classList.add('hidden'); }
 function initReservation(gasUrl) {
   let selectedSlot = null;
 
-  // 枠読み込み
   async function loadSlots() {
+    show('slots-loading');
+    hide('slots-error');
+    document.getElementById('slots-grid').innerHTML = '';
+
     try {
       const data = await gasGet(gasUrl, { action: 'getSlots' });
       if (data.error) throw new Error(data.error);
       renderSlots(data);
     } catch (e) {
       hide('slots-loading');
-      showError('slots-error', '空き状況の取得に失敗しました。しばらく経ってから再読み込みしてください。');
+      showError('slots-error', '空き状況の取得に失敗しました。ページを再読み込みしてください。');
     }
   }
 
@@ -71,16 +72,20 @@ function initReservation(gasUrl) {
     const grid = document.getElementById('slots-grid');
     if (!grid) return;
 
-    if (slots.length === 0) {
-      grid.innerHTML = '<p style="color:#666">現在予約可能な枠がありません。</p>';
+    if (!slots || slots.length === 0) {
+      grid.innerHTML = '<p style="color:#666;padding:12px 0">現在予約可能な枠がありません。</p>';
       return;
     }
 
-    // 日付ラベル
+    // 日付ラベル（タイムゾーンずれ対策でsplit）
     const dateLabel = document.getElementById('event-date-label');
     if (dateLabel && slots[0]) {
-      const d = new Date(slots[0].date);
-      dateLabel.textContent = `📅 ${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${['日','月','火','水','木','金','土'][d.getDay()]}）`;
+      const parts = String(slots[0].date).split('-');
+      if (parts.length === 3) {
+        const y = parts[0], m = parseInt(parts[1]), d = parseInt(parts[2]);
+        const dow = new Date(y, m - 1, d).getDay();
+        dateLabel.textContent = `📅 ${y}年${m}月${d}日（${'日月火水木金土'[dow]}）`;
+      }
     }
 
     grid.innerHTML = '';
@@ -88,9 +93,20 @@ function initReservation(gasUrl) {
       const btn = document.createElement('button');
       btn.className = 'slot-btn' + (slot.full ? ' full' : '');
       btn.disabled = slot.full;
+
+      // 残数表示
+      let availText;
+      if (slot.full) {
+        availText = '満員';
+      } else if (slot.available === 2) {
+        availText = '残り2名';
+      } else {
+        availText = `残り${slot.available}名`;
+      }
+
       btn.innerHTML = `
         <div class="slot-time">${slot.time}</div>
-        <div class="slot-avail">${slot.full ? '満員' : `残り${slot.available}名`}</div>
+        <div class="slot-avail">${availText}</div>
       `;
       if (!slot.full) {
         btn.addEventListener('click', () => selectSlot(slot, btn));
@@ -117,29 +133,32 @@ function initReservation(gasUrl) {
     hide('step-form');
     show('step-slots');
     hideError('form-error');
+    loadSlots(); // 戻る際に最新の空き状況を再取得
   });
 
-  // 送信
+  // 送信（GETパラメータ経由でGASに送信）
   document.getElementById('btn-submit')?.addEventListener('click', async () => {
     hideError('form-error');
-    const name = document.getElementById('name')?.value.trim();
-    const phone = document.getElementById('phone')?.value.trim();
+    const name    = document.getElementById('name')?.value.trim();
+    const phone   = document.getElementById('phone')?.value.trim();
     const concern = document.getElementById('concern')?.value.trim();
 
-    if (!name) { showError('form-error', 'お名前を入力してください。'); return; }
-    if (!phone) { showError('form-error', '電話番号を入力してください。'); return; }
+    if (!name)         { showError('form-error', 'お名前を入力してください。'); return; }
+    if (!phone)        { showError('form-error', '電話番号を入力してください。'); return; }
     if (!selectedSlot) { showError('form-error', '時間枠を選択してください。'); return; }
 
-    const btn = document.getElementById('btn-submit');
-    btn.disabled = true;
-    btn.textContent = '送信中…';
+    const submitBtn = document.getElementById('btn-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '送信中…';
 
     try {
-      const result = await gasPost(gasUrl, {
-        action: 'reserve',
-        date: selectedSlot.date,
-        time: selectedSlot.time,
-        name, phone, concern
+      const result = await gasGet(gasUrl, {
+        action:  'reserve',
+        date:    selectedSlot.date,
+        time:    selectedSlot.time,
+        name:    name,
+        phone:   phone,
+        concern: concern
       });
 
       if (result.success) {
@@ -148,7 +167,7 @@ function initReservation(gasUrl) {
         const summary = document.getElementById('done-summary');
         if (summary) {
           summary.innerHTML = `
-            <b>日時：</b>${selectedSlot.date} ${selectedSlot.time}〜<br>
+            <b>日時：</b>${escHtml(String(selectedSlot.date))} ${escHtml(String(selectedSlot.time))}〜<br>
             <b>お名前：</b>${escHtml(name)}<br>
             <b>電話番号：</b>${escHtml(phone)}
             ${concern ? `<br><b>お悩み：</b>${escHtml(concern)}` : ''}
@@ -161,8 +180,8 @@ function initReservation(gasUrl) {
     } catch (e) {
       showError('form-error', '通信エラーが発生しました。再度お試しください。');
     } finally {
-      btn.disabled = false;
-      btn.textContent = '予約を確定する';
+      submitBtn.disabled = false;
+      submitBtn.textContent = '予約を確定する';
     }
   });
 
@@ -189,7 +208,7 @@ function initAdmin(gasUrl) {
 
   // ログイン
   document.getElementById('btn-login')?.addEventListener('click', async () => {
-    const pw = document.getElementById('admin-password')?.value;
+    const pw = document.getElementById('admin-password')?.value || '';
     hideError('login-error');
 
     try {
@@ -202,11 +221,10 @@ function initAdmin(gasUrl) {
       hide('panel-login');
       show('admin-panel');
 
-      // 設定値をフォームにセット
       const s = result.settings;
       if (s.event_date) document.getElementById('event-date').value = s.event_date;
       if (s.start_time) document.getElementById('start-time').value = s.start_time;
-      if (s.end_time) document.getElementById('end-time').value = s.end_time;
+      if (s.end_time)   document.getElementById('end-time').value   = s.end_time;
 
       loadReservations();
     } catch (e) {
@@ -214,7 +232,6 @@ function initAdmin(gasUrl) {
     }
   });
 
-  // Enterキーでログイン
   document.getElementById('admin-password')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('btn-login')?.click();
   });
@@ -224,19 +241,27 @@ function initAdmin(gasUrl) {
     const msgEl = document.getElementById('settings-msg');
     msgEl?.classList.add('hidden');
 
-    const result = await gasPost(gasUrl, {
-      action: 'updateSettings',
-      password: adminPassword,
-      event_date: document.getElementById('event-date')?.value,
-      start_time: document.getElementById('start-time')?.value,
-      end_time: document.getElementById('end-time')?.value
-    });
+    try {
+      const result = await gasGet(gasUrl, {
+        action:     'updateSettings',
+        password:   adminPassword,
+        event_date: document.getElementById('event-date')?.value,
+        start_time: document.getElementById('start-time')?.value,
+        end_time:   document.getElementById('end-time')?.value
+      });
 
-    if (msgEl) {
-      msgEl.textContent = result.message || (result.success ? '保存しました。' : 'エラーが発生しました。');
-      msgEl.className = result.success ? 'success-msg' : 'error-msg';
-      msgEl.classList.remove('hidden');
-      setTimeout(() => msgEl.classList.add('hidden'), 3000);
+      if (msgEl) {
+        msgEl.textContent = result.message || (result.success ? '保存しました。' : 'エラー');
+        msgEl.className = result.success ? 'success-msg' : 'error-msg';
+        msgEl.classList.remove('hidden');
+        setTimeout(() => msgEl.classList.add('hidden'), 3000);
+      }
+    } catch (e) {
+      if (msgEl) {
+        msgEl.textContent = '通信エラーが発生しました。';
+        msgEl.className = 'error-msg';
+        msgEl.classList.remove('hidden');
+      }
     }
   });
 
@@ -252,7 +277,7 @@ function initAdmin(gasUrl) {
       hide('reservations-loading');
 
       if (!result.success) {
-        showError('reservations-error', result.message || '取得失敗');
+        showError('reservations-error', result.message || '取得に失敗しました。');
         return;
       }
       allReservations = result.reservations || [];
@@ -263,7 +288,6 @@ function initAdmin(gasUrl) {
     }
   }
 
-  // フィルター
   document.getElementById('filter-status')?.addEventListener('change', renderReservations);
 
   function renderReservations() {
@@ -285,12 +309,9 @@ function initAdmin(gasUrl) {
     hide('no-reservations');
 
     tbody.innerHTML = '';
-    // 日付・時間で昇順ソート
-    const sorted = [...filtered].sort((a, b) => {
-      const ka = `${a.date} ${a.time}`;
-      const kb = `${b.date} ${b.time}`;
-      return ka.localeCompare(kb);
-    });
+    const sorted = [...filtered].sort((a, b) =>
+      (`${a.date} ${a.time}`).localeCompare(`${b.date} ${b.time}`)
+    );
 
     sorted.forEach(r => {
       const tr = document.createElement('tr');
@@ -303,7 +324,7 @@ function initAdmin(gasUrl) {
         <td style="max-width:160px;word-break:break-all">${escHtml(r.concern || '—')}</td>
         <td><span class="badge-${r.status}">${r.status === 'confirmed' ? '確定' : 'キャンセル'}</span></td>
         <td>${r.status === 'confirmed'
-          ? `<button class="btn btn-danger" data-row="${r.rowIndex}">キャンセル</button>`
+          ? `<button class="btn btn-danger cancel-btn" data-row="${r.rowIndex}">キャンセル</button>`
           : '—'
         }</td>
       `;
@@ -311,25 +332,33 @@ function initAdmin(gasUrl) {
     });
 
     // キャンセルボタン
-    tbody.querySelectorAll('.btn-danger').forEach(btn => {
+    tbody.querySelectorAll('.cancel-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('この予約をキャンセルしますか？')) return;
-        const rowIndex = Number(btn.dataset.row);
-        const result = await gasPost(gasUrl, {
-          action: 'cancelReservation',
-          password: adminPassword,
-          rowIndex
-        });
-        if (result.success) {
-          loadReservations();
-        } else {
-          alert(result.message || 'エラーが発生しました。');
+        btn.disabled = true;
+        btn.textContent = '処理中…';
+        try {
+          const result = await gasGet(gasUrl, {
+            action:   'cancelReservation',
+            password: adminPassword,
+            rowIndex: btn.dataset.row
+          });
+          if (result.success) {
+            loadReservations();
+          } else {
+            alert(result.message || 'エラーが発生しました。');
+            btn.disabled = false;
+            btn.textContent = 'キャンセル';
+          }
+        } catch (e) {
+          alert('通信エラーが発生しました。');
+          btn.disabled = false;
+          btn.textContent = 'キャンセル';
         }
       });
     });
   }
 
-  // 再読込
   document.getElementById('btn-reload')?.addEventListener('click', loadReservations);
 
   // CSV出力
@@ -342,11 +371,10 @@ function initAdmin(gasUrl) {
     const csv = [header, ...rows]
       .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
       .join('\n');
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `hypergolf_reservations_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `hypergolf_reservations_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   });
 }
