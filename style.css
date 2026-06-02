@@ -272,4 +272,18 @@ tbody tr.cancelled td { color: #aaa; text-decoration: line-through; }
   border-radius: 4px; padding: 2px 7px; font-size: .75rem; font-weight: 700;
 }
 
+/* ── キャンセル案内 ── */
+.cancel-notice {
+  background: #fff8e1;
+  border: 1.5px solid var(--gold);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: .9rem;
+  line-height: 1.7;
+  color: #5a4000;
+}
+.cancel-notice strong { color: #3a2800; }
+
 .hidden { display: none !important; }
