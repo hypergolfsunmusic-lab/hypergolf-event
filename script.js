@@ -98,8 +98,8 @@ function initReservation(gasUrl) {
       let availText;
       if (slot.full) {
         availText = '満員';
-      } else if (slot.available === 2) {
-        availText = '残り2名';
+      } else if (slot.available === 3) {
+        availText = '残り3名';
       } else {
         availText = `残り${slot.available}名`;
       }
@@ -153,13 +153,13 @@ function initReservation(gasUrl) {
 
     try {
       const result = await gasGet(gasUrl, {
-  action:  'reserve',
-  date:    selectedSlot.date,
-  time:    selectedSlot.time,
-  uname:   name,      // name → uname に変更
-  phone:   phone,
-  concern: concern
-});
+        action:  'reserve',
+        date:    selectedSlot.date,
+        time:    selectedSlot.time,
+        name:    name,
+        phone:   phone,
+        concern: concern
+      });
 
       if (result.success) {
         hide('step-form');
