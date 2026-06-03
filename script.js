@@ -140,10 +140,13 @@ function initReservation(gasUrl) {
     hideError('form-error');
     const name    = document.getElementById('name')?.value.trim();
     const phone   = document.getElementById('phone')?.value.trim();
+    const email   = document.getElementById('email')?.value.trim();
     const concern = document.getElementById('concern')?.value.trim();
 
     if (!name)         { showError('form-error', 'お名前を入力してください。'); return; }
     if (!phone)        { showError('form-error', '電話番号を入力してください。'); return; }
+    if (!email)        { showError('form-error', 'メールアドレスを入力してください。'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('form-error', '正しいメールアドレスを入力してください。'); return; }
     if (!selectedSlot) { showError('form-error', '時間枠を選択してください。'); return; }
 
     const submitBtn = document.getElementById('btn-submit');
@@ -155,8 +158,9 @@ function initReservation(gasUrl) {
         action:  'reserve',
         date:    selectedSlot.date,
         time:    selectedSlot.time,
-        uname:   name,   // nameはURLパラメータ衝突回避のためuname
+        uname:   name,
         phone:   phone,
+        email:   email,
         concern: concern
       });
 
@@ -168,7 +172,8 @@ function initReservation(gasUrl) {
           summary.innerHTML = `
             <b>日時：</b>${escHtml(String(selectedSlot.date))} ${escHtml(String(selectedSlot.time))}〜<br>
             <b>お名前：</b>${escHtml(name)}<br>
-            <b>電話番号：</b>${escHtml(phone)}
+            <b>電話番号：</b>${escHtml(phone)}<br>
+            <b>メールアドレス：</b>${escHtml(email)}
             ${concern ? `<br><b>お悩み：</b>${escHtml(concern)}` : ''}
           `;
         }
@@ -192,6 +197,7 @@ function initReservation(gasUrl) {
     show('step-slots');
     document.getElementById('name').value    = '';
     document.getElementById('phone').value   = '';
+    document.getElementById('email').value   = '';
     document.getElementById('concern').value = '';
     loadSlots();
   });
