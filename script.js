@@ -1,38 +1,18 @@
 // ============================================================
 // HYPER GOLF 予約システム - クライアントJS
+// POST通信（Cloudflare Workers経由）版
 // ============================================================
 
-// ── JSONP通信（CORS回避） ───────────────────────────────────
+// ── POST通信（Cloudflare Workers経由） ─────────────────────
 
-function gasGet(gasUrl, params) {
-  return new Promise((resolve, reject) => {
-    const callbackName = 'cb_' + Math.random().toString(36).slice(2);
-    const url = new URL(gasUrl);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    url.searchParams.set('callback', callbackName);
-
-    const script = document.createElement('script');
-    script.src = url.toString();
-
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error('timeout'));
-    }, 15000);
-
-    window[callbackName] = (data) => {
-      cleanup();
-      resolve(data);
-    };
-
-    function cleanup() {
-      clearTimeout(timer);
-      delete window[callbackName];
-      if (script.parentNode) script.remove();
-    }
-
-    script.onerror = () => { cleanup(); reject(new Error('load error')); };
-    document.head.appendChild(script);
+async function gasPost(workerUrl, params) {
+  const res = await fetch(workerUrl, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(params)
   });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
 }
 
 // ── ユーティリティ ──────────────────────────────────────────
@@ -49,7 +29,7 @@ function hideError(id) { document.getElementById(id)?.classList.add('hidden'); }
 
 // ── 予約フォーム ────────────────────────────────────────────
 
-function initReservation(gasUrl) {
+function initReservation(workerUrl) {
   let selectedSlot = null;
 
   async function loadSlots() {
@@ -58,7 +38,7 @@ function initReservation(gasUrl) {
     document.getElementById('slots-grid').innerHTML = '';
 
     try {
-      const data = await gasGet(gasUrl, { action: 'getSlots' });
+      const data = await gasPost(workerUrl, { action: 'getSlots' });
       if (data.error) throw new Error(data.error);
       renderSlots(data);
     } catch (e) {
@@ -92,7 +72,7 @@ function initReservation(gasUrl) {
     slots.forEach(slot => {
       const btn = document.createElement('button');
       btn.className = 'slot-btn' + (slot.full ? ' full' : '');
-      btn.disabled = slot.full;
+      btn.disabled  = slot.full;
 
       let availText;
       if (slot.full) {
@@ -127,7 +107,7 @@ function initReservation(gasUrl) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // 戻るボタン（枠を再取得）
+  // 戻るボタン
   document.getElementById('btn-back')?.addEventListener('click', () => {
     hide('step-form');
     show('step-slots');
@@ -150,11 +130,11 @@ function initReservation(gasUrl) {
     if (!selectedSlot) { showError('form-error', '時間枠を選択してください。'); return; }
 
     const submitBtn = document.getElementById('btn-submit');
-    submitBtn.disabled = true;
+    submitBtn.disabled    = true;
     submitBtn.textContent = '送信中…';
 
     try {
-      const result = await gasGet(gasUrl, {
+      const result = await gasPost(workerUrl, {
         action:  'reserve',
         date:    selectedSlot.date,
         time:    selectedSlot.time,
@@ -184,7 +164,7 @@ function initReservation(gasUrl) {
     } catch (e) {
       showError('form-error', '通信エラーが発生しました。再度お試しください。');
     } finally {
-      submitBtn.disabled = false;
+      submitBtn.disabled    = false;
       submitBtn.textContent = '予約を確定する';
     }
   });
@@ -207,7 +187,7 @@ function initReservation(gasUrl) {
 
 // ── 管理画面 ────────────────────────────────────────────────
 
-function initAdmin(gasUrl) {
+function initAdmin(workerUrl) {
   let adminPassword   = '';
   let allReservations = [];
 
@@ -217,7 +197,7 @@ function initAdmin(gasUrl) {
     hideError('login-error');
 
     try {
-      const result = await gasGet(gasUrl, { action: 'getSettings', password: pw });
+      const result = await gasPost(workerUrl, { action: 'getSettings', password: pw });
       if (!result.success) {
         showError('login-error', result.message || 'パスワードが違います。');
         return;
@@ -247,7 +227,7 @@ function initAdmin(gasUrl) {
     msgEl?.classList.add('hidden');
 
     try {
-      const result = await gasGet(gasUrl, {
+      const result = await gasPost(workerUrl, {
         action:     'updateSettings',
         password:   adminPassword,
         event_date: document.getElementById('event-date')?.value,
@@ -278,7 +258,7 @@ function initAdmin(gasUrl) {
     hideError('reservations-error');
 
     try {
-      const result = await gasGet(gasUrl, { action: 'getReservations', password: adminPassword });
+      const result = await gasPost(workerUrl, { action: 'getReservations', password: adminPassword });
       hide('reservations-loading');
 
       if (!result.success) {
@@ -343,7 +323,7 @@ function initAdmin(gasUrl) {
         btn.disabled    = true;
         btn.textContent = '処理中…';
         try {
-          const result = await gasGet(gasUrl, {
+          const result = await gasPost(workerUrl, {
             action:   'cancelReservation',
             password: adminPassword,
             rowIndex: btn.dataset.row
