@@ -153,6 +153,7 @@ body {
 .form-group input:focus,
 .form-group textarea:focus { border-color: var(--green); }
 .required { color: var(--red); margin-left: 2px; }
+.field-note { font-size: .78rem; color: var(--text-muted); margin-top: 4px; }
 
 .form-row {
   display: grid;
