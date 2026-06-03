@@ -37,6 +37,11 @@
         <input type="tel" id="phone" placeholder="090-1234-5678" maxlength="20" />
       </div>
       <div class="form-group">
+        <label for="email">メールアドレス <span class="required">*</span></label>
+        <input type="email" id="email" placeholder="example@email.com" maxlength="100" />
+        <p class="field-note">予約完了メールをお送りします</p>
+      </div>
+      <div class="form-group">
         <label for="concern">ゴルフでのお悩み</label>
         <textarea id="concern" rows="4" placeholder="例：スライスが直らない、飛距離が伸びない など"></textarea>
       </div>
@@ -65,7 +70,7 @@
 
   <script src="script.js"></script>
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz8XMau49pVjXgnFEsj4bp3Ek0C75JfG7ST9lUFRsc-PYbIM6rO6lIMfeOVKqBFUK4btQ/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxlSw3o0bRnle9QKjnPMNYXyobPhxpRy_rU2ybdQqDri18CcVmSIznP1-gm3We2U_2wyA/exec';
     initReservation(GAS_URL);
   </script>
 </body>
