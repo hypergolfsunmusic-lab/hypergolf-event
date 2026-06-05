@@ -74,18 +74,9 @@ function initReservation(workerUrl) {
       btn.className = 'slot-btn' + (slot.full ? ' full' : '');
       btn.disabled  = slot.full;
 
-      let availText;
-      if (slot.full) {
-        availText = '満員';
-      } else if (slot.available === 2) {
-        availText = '残り2名';
-      } else {
-        availText = `残り${slot.available}名`;
-      }
-
       btn.innerHTML = `
         <div class="slot-time">${slot.time}</div>
-        <div class="slot-avail">${availText}</div>
+        ${slot.full ? '<div class="slot-avail">満員</div>' : ''}
       `;
       if (!slot.full) {
         btn.addEventListener('click', () => selectSlot(slot, btn));
@@ -100,7 +91,7 @@ function initReservation(workerUrl) {
     btn.classList.add('selected');
 
     const info = document.getElementById('selected-slot-info');
-    if (info) info.textContent = `選択中：${slot.date} ${slot.time}〜（残り${slot.available}名）`;
+    if (info) info.textContent = `選択中：${slot.date} ${slot.time}〜`;
 
     hide('step-slots');
     show('step-form');
